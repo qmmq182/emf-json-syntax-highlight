@@ -1,0 +1,62 @@
+{
+	"name": "emf-json-syntax-highlight",
+	"displayName": "emf-json-syntax-highlight",
+	"description": "Syntax Highlight For EMF json workflow file",
+	"version": "0.0.1",
+	"publisher": "qmmq182",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/qmmq182/emf-json-syntax-highlight"
+	},
+	"engines": {
+		"vscode": "^1.53.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:json"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "json",
+				"extensions": [
+					".json"
+				]
+			}
+		],
+		"configurationDefaults": {
+			"editor.semanticTokenColorCustomizations": {
+        
+				"enabled": true,
+				"rules": {
+					"*.static": {
+						"fontStyle": "bold"
+					},
+					"type": {
+						"foreground": "#00aa00"
+					},
+					"*.abstract": {
+						"fontStyle": "italic"
+					}
+				}
+			}
+	  }
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint \"src/**/*.ts\"",
+		"watch": "tsc -watch -p ./"
+	},
+	"devDependencies": {
+		"@types/node": "14.x",
+		"@types/vscode": "^1.53.0",
+		"@typescript-eslint/eslint-plugin": "^5.59.8",
+		"@typescript-eslint/parser": "^5.59.8",
+		"eslint": "^8.41.0",
+		"typescript": "^5.1.3"
+	}
+}
