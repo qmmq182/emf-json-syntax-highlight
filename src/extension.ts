@@ -111,6 +111,22 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 				currentOffset = commandStart + commandLength;
 			}
 
+			// file_type in IR
+			const fileTypeMatch = /"file_type":\s*"([^"]+)"/.exec(line);
+			if (fileTypeMatch != null) {
+				const fileType = fileTypeMatch![1];
+				console.log(`file_type: ${fileType}`);
+				const fileTypeStart = line.search(fileType);
+				const fileTypeLength = fileType.length;
+				r.push({
+					line: i,
+					startCharacter: fileTypeStart,
+					length: fileTypeLength,
+					tokenType: "class",
+					tokenModifiers: ["static"]
+				});
+			}
+
 			// Parameters, find start, end of inner keys, inner values.
 			const parametersKeyword = "\"parameters\"";
 			const parametersStart = line.indexOf(parametersKeyword);
@@ -126,66 +142,81 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 				if (openKeyOffset === -1) {
 					break;
 				}
-				const closeKeyOffset = line.indexOf('\\"', openKeyOffset+2);
+				const interKeyOffset = line.indexOf('\\"', openKeyOffset+2);
+				if (interKeyOffset === -1) {
+					break;
+				}
+				const closeKeyOffset = line.indexOf(':', interKeyOffset+2);
 				if (closeKeyOffset === -1) {
 					break;
 				}
-				const currentKey = line.substring(openKeyOffset + 2, openKeyOffset + 2 + closeKeyOffset - openKeyOffset - 2);
+				const nextOpenKeyOffset = line.indexOf('\\"', interKeyOffset+2);
+				console.log(`Found 4 key point. open: ${openKeyOffset}, inter: ${interKeyOffset}, close: ${closeKeyOffset}, next: ${nextOpenKeyOffset}`);
+				console.log(`open: ${line.substring(openKeyOffset)}`);
+				console.log(`inter: ${line.substring(interKeyOffset)}`);
+				console.log(`close: ${line.substring(closeKeyOffset)}`);
+				if (closeKeyOffset > nextOpenKeyOffset && nextOpenKeyOffset !== -1) {
+					// The ':' does not belong to current \" pair, means it's a value not a key, skip
+					console.log("Skip value.");
+					currentOffset = nextOpenKeyOffset;
+					continue;
+				}
+				const currentKey = line.substring(openKeyOffset + 2, openKeyOffset + 2 + interKeyOffset - openKeyOffset - 2);
 				console.log(`openKeyOffset: ${openKeyOffset}, currentKey: ${currentKey}`);
 				r.push({
 					line: i,
 					// Because \" is a two characters symbol, so +2 and -2
 					startCharacter: openKeyOffset + 2,
-					length: closeKeyOffset - openKeyOffset - 2,
+					length: interKeyOffset - openKeyOffset - 2,
 					tokenType: "property",
 					tokenModifiers: ["readonly"]
 				});
-				currentOffset = closeKeyOffset + 2;
+				currentOffset = closeKeyOffset + 1;
 				console.log(`currentOffset after found key '${currentKey}': ${currentOffset}`);
 				
 				// ':' the delimiter
-				const colonOffset = line.indexOf(":", currentOffset);
-				if (colonOffset === -1) {
-					// Found the key but never found the corresponding value
-					break;
-				}
-				const colon = line.substring(colonOffset, colonOffset + 1);
-				console.log(`Found ':' the delimiter at ${colonOffset}, test colon - '${colon}'`);
-				currentOffset = colonOffset + 1;
+				// const colonOffset = line.indexOf(":", currentOffset);
+				// if (colonOffset === -1) {
+				// 	// Found the key but never found the corresponding value
+				// 	break;
+				// }
+				// const colon = line.substring(colonOffset, colonOffset + 1);
+				// console.log(`Found ':' the delimiter at ${colonOffset}, test colon - '${colon}'`);
+				// currentOffset = colonOffset + 1;
 				
 				// If next '{' index is smaller than next '\"', then ignore the whole "{   }""
-				const nextOpenBraceOffset = line.indexOf('{', currentOffset);
-				console.log(`nextOpenBraceOffset: ${nextOpenBraceOffset}`);
-				const nextKeyOrValueOffset = line.indexOf('\\"', currentOffset);
-				if (nextOpenBraceOffset !== -1 && nextOpenBraceOffset < nextKeyOrValueOffset) {
-					console.log(`Brace comes first. nextKeyOrValueOffset: ${nextKeyOrValueOffset}. Skip the whole braces content.`);
-					const closeBraceOffset = line.indexOf('}', nextOpenBraceOffset + 1);
-					console.log(`closeBraceOffset: ${closeBraceOffset}`);
-					currentOffset = closeBraceOffset + 1;
-					console.log(`After skip braces, current offset: ${currentOffset}`);
-					const skippedContents = line.substring(nextOpenBraceOffset, nextOpenBraceOffset + 1 + closeBraceOffset - nextOpenBraceOffset);
-					console.log(`Skipped contents: ${skippedContents}`);
-				}  else {
+				// const nextOpenBraceOffset = line.indexOf('{', currentOffset);
+				// console.log(`nextOpenBraceOffset: ${nextOpenBraceOffset}`);
+				// const nextKeyOrValueOffset = line.indexOf('\\"', currentOffset);
+				// if (nextOpenBraceOffset !== -1 && nextOpenBraceOffset < nextKeyOrValueOffset) {
+				// 	console.log(`Brace comes first. nextKeyOrValueOffset: ${nextKeyOrValueOffset}. Skip the whole braces content.`);
+				// 	const closeBraceOffset = line.indexOf('}', nextOpenBraceOffset + 1);
+				// 	console.log(`closeBraceOffset: ${closeBraceOffset}`);
+				// 	currentOffset = closeBraceOffset + 1;
+				// 	console.log(`After skip braces, current offset: ${currentOffset}`);
+				// 	const skippedContents = line.substring(nextOpenBraceOffset, nextOpenBraceOffset + 1 + closeBraceOffset - nextOpenBraceOffset);
+				// 	console.log(`Skipped contents: ${skippedContents}`);
+				// }  else {
 
-					// value
-					const openValueOffset = line.indexOf('\\"', currentOffset);
-					if (openValueOffset === -1) {
-						break;
-					}
-					const closeValueOffset = line.indexOf('\\"', openValueOffset+2);
-					if (closeValueOffset === -1) {
-						break;
-					}
-					// r.push({
-					// 	line: i,
-					// 	startCharacter: openValueOffset + 1,
-					// 	length: closeValueOffset - openValueOffset - 1,
-					// 	tokenType: "property",
-					// 	tokenModifiers: ["readonly"]
-					// });
-					currentOffset = closeValueOffset + 2;
+				// 	// value
+				// 	const openValueOffset = line.indexOf('\\"', currentOffset);
+				// 	if (openValueOffset === -1) {
+				// 		break;
+				// 	}
+				// 	const closeValueOffset = line.indexOf('\\"', openValueOffset+2);
+				// 	if (closeValueOffset === -1) {
+				// 		break;
+				// 	}
+				// 	// r.push({
+				// 	// 	line: i,
+				// 	// 	startCharacter: openValueOffset + 1,
+				// 	// 	length: closeValueOffset - openValueOffset - 1,
+				// 	// 	tokenType: "property",
+				// 	// 	tokenModifiers: ["readonly"]
+				// 	// });
+				// 	currentOffset = closeValueOffset + 2;
 	
-				} 
+				// } 
 	
 			} while (true);
 
@@ -242,5 +273,9 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			tokenType: parts[0],
 			tokenModifiers: parts.slice(1)
 		};
+	}
+
+	private _skipSpaces() {
+		return 0;
 	}
 }

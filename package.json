@@ -2,7 +2,7 @@
 	"name": "emf-json-syntax-highlight",
 	"displayName": "emf-json-syntax-highlight",
 	"description": "Syntax Highlight For EMF json workflow file",
-	"version": "0.0.1",
+	"version": "0.1.2",
 	"publisher": "qmmq182",
 	"repository": {
 		"type": "git",

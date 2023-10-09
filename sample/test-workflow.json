@@ -1,9 +1,9 @@
-{"order_id": "AAA", "command":"GBQ-SQL-FROM-GCS", "parents":[],"parameters":"{\"file_name\":\"fotc-mi/sql/FOTC_CALENDAR_WD.sql\",\"target_dataset\":\"[$target_dataset]\",\"target_table\":\"[$target_table]\"}"}
+{"order_id": "AAA", "command":"GBQ-SQL-FROM-GCS", "parents":[],"parameters":"{\"file_name\":\"fotc-mi/sql/FOTC_CALENDAR_WD.sql\",\"target_dataset\":\"[$target_dataset]\",\"as_view\":false,\"target_table\":\"[$target_table]\"}"}
 {"order_id": "BBB", "command": "OE-RUN", "parents":["AAA"],"parameters":"{\"workflow\":\"FOTC_R00_6\"}"}
 {"order_id": "CCC_WITH_MODE", "parents":["BBB"], "parameters": "{\"labels\": {\"execution_mode\":[\"FULL\"]},\"target_dataset\":\"$target_dataset\"}"}
-{"order_id": "DDD", "parents":["XXXXXXXXXXXXX"],  "parameters": "{\"labels\": {\"execution_mode\":[\"ADJ\"]}}"}
+{"order_id": "DDD", "parents":["XXXXXXXXXXXXX"],  "parameters": "{\"labels\": {\"execution_mode\":[\"ADJ\"]}, \"retry_times\":3}"}
 {"order_id": "DDD", "parents":["XXXXXXXXXXXXX"]}
-
+{"file_type":"rules_engine_input","table_name":"FFFAA"}
 
 
 
