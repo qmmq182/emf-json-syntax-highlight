@@ -7,7 +7,7 @@ Syntax Highlight For EMF json workflow file.
 
 1. Install the extension and open the a json file for EMF workflow.
 2. Use the following settings (optional, if not use this setting may lost some extra font-style like bold/italic, but will still have colors highlight):
-	- `Ctrl+P` to open command dialogue, then search "open user settings json", will open a "settings.json" file,
+	- `Ctrl+Shift+P` to open command dialogue, then search "settings.json", choose `Preferences: Open Settings (JSON)` or `Preferences: Open User Settings (JSON)`, will open a "settings.json" file,
 	- Copy below setting into `settings.json` and save:
 		```jsonc
 		"editor.semanticTokenColorCustomizations": {

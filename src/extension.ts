@@ -70,13 +70,14 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 		const lines = text.split(/\r\n|\r|\n/);
 		for (let i = 0; i < lines.length; i++) {
 			console.log(`=============== Start line-${i}:`);
-			const line = lines[i].trim();
+			const line = lines[i];
 			if (line.length === 0) 
 				continue;
 			let currentOffset = 0;
 
 			// order_id
 			const orderIdMatch = /"order_id":\s*"([^"]+)"/.exec(line);
+			let offsetAfterOrderId = 0;
 			if (orderIdMatch != null) {
 				const orderId = orderIdMatch![1];
 				console.log(`order_id: ${orderId}`);
@@ -90,6 +91,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 					tokenModifiers: ["static"]
 				});
 				currentOffset = orderIdStart + orderIdLength;
+				offsetAfterOrderId = orderIdStart + orderIdLength + 1;
 			}
 
 
@@ -135,6 +137,11 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			currentOffset = line.indexOf('{', currentOffset) + 1;
 			// Then loop, the first \"something\" is key, then ':', then \"some_value\"
 
+			if (!(commandMatch !== null && parametersStart !== -1)) {
+				// Main purpose: do not render load_info because of too big schema content will slow down the program.
+				continue;
+			}
+
 			do {
 				// key
 				
@@ -151,10 +158,21 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 					break;
 				}
 				const nextOpenKeyOffset = line.indexOf('\\"', interKeyOffset+2);
+				const nextNonEscapedQuoteOffset = line.indexOf('"', interKeyOffset+2);
 				console.log(`Found 4 key point. open: ${openKeyOffset}, inter: ${interKeyOffset}, close: ${closeKeyOffset}, next: ${nextOpenKeyOffset}`);
 				console.log(`open: ${line.substring(openKeyOffset)}`);
 				console.log(`inter: ${line.substring(interKeyOffset)}`);
 				console.log(`close: ${line.substring(closeKeyOffset)}`);
+				console.log(`next: ${line.substring(nextOpenKeyOffset)}`);
+				console.log(`paramEnd: ${line.substring(nextNonEscapedQuoteOffset)}`);
+				let nextQuoteIsParameterEnd = false;
+				if (line.substring(nextNonEscapedQuoteOffset-1, nextNonEscapedQuoteOffset) !== "\\") {
+					nextQuoteIsParameterEnd = true; 
+					if (nextQuoteIsParameterEnd && closeKeyOffset > nextNonEscapedQuoteOffset) {
+
+						break;
+					}
+				}
 				if (closeKeyOffset > nextOpenKeyOffset && nextOpenKeyOffset !== -1) {
 					// The ':' does not belong to current \" pair, means it's a value not a key, skip
 					console.log("Skip value.");
@@ -220,19 +238,19 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 	
 			} while (true);
 
-			// Special paramter: workflow
+			// Special paramter: workflow, but not order_id
 			if (command === "OE-RUN") {
 				const oerunWorkflowMatch = /\\"workflow\\":\s*\\"([^\\"]+)\\"/.exec(line);
 				if (oerunWorkflowMatch !== null) {
 					const oerunWorkflow = oerunWorkflowMatch![1];
 					console.log(`oerunWorkflow: ${oerunWorkflow}`);
-					const oerunWorkflowStart = line.search(oerunWorkflow);
+					const oerunWorkflowStart = line.indexOf(oerunWorkflow, offsetAfterOrderId);
 					const oerunWorkflowLength = oerunWorkflow.length;
 					r.push({
 						line: i,
 						startCharacter: oerunWorkflowStart,
 						length: oerunWorkflowLength,
-						tokenType: "class",
+						tokenType: "keyword",
 						tokenModifiers: ["abstract"]
 					});
 					currentOffset = oerunWorkflowStart + oerunWorkflowLength;
@@ -252,7 +270,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 						line: i,
 						startCharacter: sqlFileStart,
 						length: sqlFileLength,
-						tokenType: "type",
+						tokenType: "member",
 						tokenModifiers: ["member"]
 					});
 					currentOffset = sqlFileStart + sqlFileLength;
